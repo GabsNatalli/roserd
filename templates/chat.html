@@ -192,6 +192,27 @@
             }
         }
 
+        // Função para login
+        async function login(username, password) {
+            try {
+                const response = await fetch(`${backendUrl}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (response.ok && data.redirect) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert('Login falhou. Verifique suas credenciais.');
+                }
+            } catch (error) {
+                console.error('Erro ao fazer login:', error);
+                alert('Erro ao conectar ao servidor.');
+            }
+        }
+
         // Função para deslogar
         function logout() {
             fetch(`${backendUrl}/logout`, { method: 'POST' })
