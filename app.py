@@ -12,6 +12,7 @@ DB_PATH = "users.db"
 
 # Função para criar a tabela de usuários
 def init_db():
+    print("Verificando o banco de dados...")
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         # Criar a tabela se ela não existir
@@ -25,6 +26,7 @@ def init_db():
             )
         """)
         conn.commit()
+        print("Tabela de usuários verificada/criada.")
 
         # Verificar se a coluna 'name' existe, e adicioná-la se necessário
         cursor.execute("PRAGMA table_info(users)")
@@ -32,16 +34,19 @@ def init_db():
         if 'name' not in columns:
             cursor.execute("ALTER TABLE users ADD COLUMN name TEXT")
             conn.commit()
+            print("Coluna 'name' adicionada à tabela de usuários.")
 
 # Função para criar o usuário padrão
 def create_default_user():
+    print("Verificando/criando usuário padrão...")
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         try:
             cursor.execute("INSERT INTO users (username, password, name) VALUES (?, ?, ?)", ("x", "22", "Admin"))
             conn.commit()
+            print("Usuário padrão criado com sucesso.")
         except sqlite3.IntegrityError:
-            pass  # Usuário já existe, ignorar
+            print("Usuário padrão já existe. Nenhuma ação necessária.")
 
 # Rota para servir arquivos estáticos (HTML)
 @app.route('/')
@@ -140,6 +145,9 @@ def handle_message(msg):
 
 # Inicializar banco de dados e criar usuário padrão
 if __name__ == '__main__':
+    print("Inicializando o banco de dados...")
     init_db()
+    print("Criando usuário padrão...")
     create_default_user()
+    print("Iniciando o servidor...")
     socketio.run(app, host='0.0.0.0', port=5000, debug=True)  # Permitir conexões externas
