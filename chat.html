@@ -151,7 +151,7 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
         const socket = io();
-        const username = "{{ username }}";
+        const username = "{{ username }}"; // Substituir pelo nome do usuário
         const isAdmin = "{{ is_admin | tojson }}".toLowerCase() === "true";
         const backendUrl = window.location.origin; // Usar a URL base do Render
 
