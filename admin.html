@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administração</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet"> <!-- Fonte Cinzel -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet"> <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet"> <!-- Ícones do Bootstrap -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #000000, #330000, #660000); /* Gradiente preto e vermelho */
+            font-family: 'Cinzel', serif; /* Fonte Cinzel */
+            color: #ffffff; /* Texto branco */
+        }
+        #tsparticles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .fog {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            opacity: 0.5;
+            animation: fogMove 10s infinite linear;
+        }
+        @keyframes fogMove {
+            0% {
+                transform: translateX(-10%) translateY(-10%);
+            }
+            50% {
+                transform: translateX(10%) translateY(10%);
+            }
+            100% {
+                transform: translateX(-10%) translateY(-10%);
+            }
+        }
+        .logout-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .logout-button:hover {
+            color: #ff5555;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            gap: 2rem;
+            padding: 2rem;
+        }
+        .section {
+            width: 90%;
+            max-width: 400px;
+            background: rgba(0, 0, 0, 0.15); /* Fundo levemente escurecido */
+            backdrop-filter: blur(10px); /* Blur para suavidade */
+            padding: 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Sombra mais leve */
+        }
+        .section h2 {
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .section .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            font-size: 0.9rem;
+            padding: 0.8rem;
+            transition: border-color 0.3s ease, background 0.3s ease; /* Transição suave */
+        }
+        .section .form-control:focus {
+            border-color: rgba(255, 255, 255, 0.5); /* Contorno branco sutil */
+            background: rgba(255, 255, 255, 0.2); /* Fundo mais visível */
+            color: #ffffff; /* Texto branco */
+            outline: none; /* Remove o contorno azul */
+            box-shadow: none; /* Remove qualquer sombra padrão */
+        }
+        .section .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .section .btn {
+            width: 100%;
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.1); /* Fundo semitransparente */
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            font-weight: bold;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+        .section .btn:hover {
+            background: rgba(255, 255, 255, 0.2); /* Fundo mais visível */
+            color: #ff5555;
+            transform: scale(1.05); /* Leve aumento no hover */
+        }
+        .cards-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+        }
+        .card button {
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+        .card button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #ff5555;
+        }
+    </style>
+</head>
+<body>
+    <div id="tsparticles"></div>
+    <div class="fog"></div> <!-- Adiciona o efeito de névoa -->
+    <button class="logout-button" id="logout-button" title="Deslogar">
+        <i class="bi bi-box-arrow-right"></i> <!-- Ícone do Bootstrap -->
+    </button>
+
+    <div class="container">
+        <!-- Seção de Registro -->
+        <div class="section">
+            <h2>Registrar Usuário</h2>
+            <form id="register-form" novalidate> <!-- Desativada a validação padrão -->
+                <div class="mb-3">
+                    <input type="text" placeholder="Nome" id="name" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <input type="text" placeholder="Usuário" id="username" class="form-control" required>
+                </div>
+                <div class="mb-3">
+                    <input type="password" placeholder="Senha" id="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn">Registrar</button>
+            </form>
+        </div>
+
+        <!-- Seção de Listagem -->
+        <div class="section">
+            <h2>Usuários Registrados</h2>
+            <div class="cards-container" id="user-list"></div>
+        </div>
+    </div>
+
+    <!-- Bootstrap e tsparticles Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
+    <script>
+        async function loadUsers() {
+            const response = await fetch('http://127.0.0.1:5000/users');
+            const users = await response.json();
+            const userList = document.getElementById('user-list');
+            userList.innerHTML = '';
+            users.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <h5>${user[2]}</h5>
+                    <p>${user[1]}</p>
+                    <button onclick="deleteUser(${user[0]})">Remover</button>
+                `;
+                userList.appendChild(card);
+            });
+        }
+
+        async function deleteUser(userId) {
+            await fetch(`http://127.0.0.1:5000/users/${userId}`, { method: 'DELETE' });
+            loadUsers();
+        }
+
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!name || !username || !password) {
+                return; // Não faz nada se os campos estiverem vazios
+            }
+
+            const response = await fetch('http://127.0.0.1:5000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, username, password })
+            });
+
+            const result = await response.json();
+            loadUsers(); // Atualiza a lista de usuários sem exibir mensagens
+
+            // Limpa os campos do formulário
+            document.getElementById('register-form').reset();
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => {
+            window.location.href = '/';
+        });
+
+        loadUsers();
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet"> <!-- Fonte Cinzel -->
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #000000, #330000, #660000); /* Gradiente preto e vermelho */
+            font-family: 'Cinzel', serif; /* Fonte Cinzel */
+            position: relative;
+        }
+        #tsparticles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        .fog {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, rgba(0, 0, 0, 0) 70%);
+            opacity: 0.5;
+            animation: fogMove 10s infinite linear;
+        }
+        @keyframes fogMove {
+            0% {
+                transform: translateX(-10%) translateY(-10%);
+            }
+            50% {
+                transform: translateX(10%) translateY(10%);
+            }
+            100% {
+                transform: translateX(-10%) translateY(-10%);
+            }
+        }
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.15); /* Fundo levemente escurecido */
+            backdrop-filter: blur(10px); /* Blur para suavidade */
+            padding: 2rem;
+            border-radius: 20px; /* Bordas arredondadas */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Sombra mais leve */
+            width: 280px;
+            text-align: center;
+            z-index: 2;
+        }
+        .login-container img {
+            width: 80px; /* Redimensiona o logotipo */
+            height: auto; /* Mantém a proporção */
+            margin-bottom: 1rem; /* Espaçamento abaixo do logotipo */
+        }
+        .login-container h2 {
+            color: #ffffff; /* Texto branco */
+            margin-bottom: 1.5rem;
+        }
+        .login-container input {
+            width: 90%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Contorno sutil */
+            background: rgba(255, 255, 255, 0.1); /* Fundo semitransparente */
+            color: #ffffff; /* Texto branco */
+            border-radius: 15px;
+            font-size: 1rem;
+            text-align: center;
+            transition: border-color 0.3s ease; /* Transição suave */
+        }
+        .login-container input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.5); /* Contorno branco sutil ao focar */
+        }
+        .login-container input::placeholder {
+            color: rgba(255, 255, 255, 0.7); /* Placeholder semitransparente */
+        }
+        .login-container button {
+            width: 90%;
+            padding: 0.8rem;
+            margin-top: 1rem;
+            background: rgba(255, 255, 255, 0.1); /* Fundo semitransparente */
+            color: #ffffff; /* Texto branco */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Contorno sutil */
+            border-radius: 15px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            text-align: center;
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease; /* Transição suave */
+        }
+        .login-container button:hover {
+            background: rgba(255, 255, 255, 0.2); /* Fundo mais visível no hover */
+            border-color: rgba(255, 255, 255, 0.5); /* Contorno branco no hover */
+            color: #ff5555; /* Texto vermelho no hover */
+        }
+    </style>
+</head>
+<body>
+    <div id="tsparticles"></div>
+    <div class="fog"></div> <!-- Adiciona o efeito de névoa -->
+    <div class="login-container">
+        <img src="img/roze.png" alt="Logotipo"> <!-- Caminho corrigido para o arquivo roze.png -->
+        <h2>Login</h2>
+        <form novalidate> <!-- Desativada a validação padrão -->
+            <input type="text" placeholder="Usuário" id="username" required>
+            <input type="password" placeholder="Senha" id="password" required>
+            <button type="submit">Entrar</button>
+        </form>
+    </div>
+    <!-- tsparticles Script via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
+    <script src="script.js"></script>
+    <script>
+        document.querySelector('form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                return; // Não faz nada se os campos estiverem vazios
+            }
+
+            const response = await fetch('http://127.0.0.1:5000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.redirect) {
+                window.location.href = result.redirect; // Redireciona para a página apropriada
+            }
+        });
+
+        tsParticles.load("tsparticles", {
+            particles: {
+                number: {
+                    value: 85, // Aumentado levemente para mais partículas
+                    density: {
+                        enable: true,
+                        value_area: 950 // Aumentada a densidade para espalhar mais partículas
+                    }
+                },
+                move: {
+                    enable: true,
+                    speed: 0.4, // Movimento mais lento para suavidade
+                    direction: "none",
+                    random: false,
+                    straight: false,
+                    out_mode: "bounce" // Partículas "presas" no espaço
+                },
+                size: {
+                    value: 1.8, // Tamanho menor para reforçar o efeito sutil
+                    random: true
+                },
+                opacity: {
+                    value: 0.15, // Opacidade reduzida para criar um efeito mais discreto
+                    random: false
+                },
+                shape: {
+                    type: "circle" // Forma circular para simplicidade
+                },
+                line_linked: {
+                    enable: true, // Habilitar as conexões
+                    distance: 150, // Distância ajustada para conexões mais suaves
+                    color: "#ff6666", // Cor ajustada para um vermelho mais suave
+                    opacity: 0.25, // Linhas mais discretas
+                    width: 0.6 // Largura reduzida para criar delicadeza
+                }
+            },
+            interactivity: {
+                events: {
+                    onhover: {
+                        enable: true,
+                        mode: "grab" // Conexões se intensificam ao passar o mouse
+                    },
+                    onclick: {
+                        enable: true,
+                        mode: "push" // Adiciona partículas ao clicar
+                    }
+                },
+                modes: {
+                    grab: {
+                        distance: 180, // Distância ajustada para conexões mais suaves
+                        line_linked: {
+                            opacity: 0.4 // Linhas mais visíveis ao interagir
+                        }
+                    },
+                    push: {
+                        particles_nb: 2 // Adiciona 2 partículas ao clicar
+                    }
+                }
+            },
+            detectRetina: true // Suporte para telas de alta densidade
+        });
+    </script>
+</body>
+</html>
