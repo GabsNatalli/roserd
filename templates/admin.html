@@ -133,19 +133,20 @@
             <form id="register-form" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="name" class="form-label">Nome</label>
-                    <input type="text" class="form-control" id="name" required>
+                    <input type="text" class="form-control" id="name" name="name" required>
                 </div>
                 <div class="mb-3">
                     <label for="username" class="form-label">Usuário</label>
-                    <input type="text" class="form-control" id="username" required>
+                    <input type="text" class="form-control" id="username" name="username" required>
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Senha</label>
-                    <input type="password" class="form-control" id="password" required>
+                    <input type="password" class="form-control" id="password" name="password" required>
                 </div>
                 <div class="mb-3">
                     <label for="profile-pic" class="form-label">Foto de Perfil (opcional)</label>
-                    <input type="file" class="form-control" id="profile-pic" accept="image/*">
+                    <input type="file" class="form-control" id="profile-pic" name="profile_pic" accept="image/*" onchange="previewImage(event)">
+                    <img id="profile-preview" src="#" alt="Pré-visualização" style="display: none; margin-top: 10px; max-width: 100px; border-radius: 50%;">
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Registrar</button>
             </form>
@@ -193,18 +194,45 @@
                 });
         }
 
+        // Pré-visualizador de imagem
+        function previewImage(event) {
+            const preview = document.getElementById('profile-preview');
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.src = '#';
+                preview.style.display = 'none';
+            }
+        }
+
+        // Enviar formulário de registro
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('name').value;
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const formData = new FormData(e.target);
 
-            await fetch('/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, username, password })
-            });
-            listUsers();
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                alert(result.message);
+                if (response.ok) {
+                    e.target.reset();
+                    document.getElementById('profile-preview').style.display = 'none';
+                    listUsers(); // Atualizar a lista de usuários
+                }
+            } catch (error) {
+                console.error("Erro ao registrar usuário:", error);
+                alert("Erro ao registrar usuário. Tente novamente.");
+            }
         });
 
         function deleteUser(userId) {

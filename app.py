@@ -38,6 +38,22 @@ def init_db():
         conn.commit()
         print("Tabela de usuários verificada/criada.")
 
+# Função para criar o usuário padrãodo banco de dados
+def update_db_structure():
+    print("Atualizando a estrutura do banco de dados...")
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        # Verificar se a coluna 'profile_pic' já existe
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'profile_pic' not in columns:
+            print("Adicionando a coluna 'profile_pic' à tabela 'users'...")
+            cursor.execute("ALTER TABLE users ADD COLUMN profile_pic TEXT")
+            conn.commit()
+            print("Coluna 'profile_pic' adicionada com sucesso.")
+        else:
+            print("A coluna 'profile_pic' já existe.")
+
 # Função para criar o usuário padrão
 def create_default_user():
     print("Verificando/criando usuário padrão...")
@@ -118,31 +134,52 @@ def login():
 # Rota para registrar usuários
 @app.route('/register', methods=['POST'])
 def register():
-    username = request.form.get('username')
-    password = request.form.get('password')
-    name = request.form.get('name')
-    profile_pic = request.files.get('profile_pic')
-
-    if not username or not password or not name:
-        return jsonify({"message": "Nome, usuário e senha são obrigatórios!"}), 400
-
-    profile_pic_path = None
-    if profile_pic:
-        filename = secure_filename(profile_pic.filename)
-        profile_pic_path = os.path.join('uploads', filename)
-        profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-
     try:
+        print("Iniciando processo de registro...")
+
+        # Capturar os dados do formulário
+        username = request.form.get('username')
+        password = request.form.get('password')
+        name = request.form.get('name')
+        profile_pic = request.files.get('profile_pic')
+
+        print(f"Dados recebidos: username={username}, name={name}, profile_pic={profile_pic.filename if profile_pic else 'Nenhuma'}")
+
+        # Verificar se os campos obrigatórios estão preenchidos
+        if not username or not password or not name:
+            print("Erro: Nome, usuário ou senha ausentes.")
+            return jsonify({"message": "Nome, usuário e senha são obrigatórios!"}), 400
+
+        # Processar a foto de perfil, se fornecida
+        profile_pic_path = None
+        if profile_pic:
+            filename = secure_filename(profile_pic.filename)
+            profile_pic_path = os.path.join('uploads', filename)
+            full_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            print(f"Tentando salvar a foto de perfil em: {full_path}")
+            profile_pic.save(full_path)
+
+        # Inserir o usuário no banco de dados
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
+            print("Conectado ao banco de dados.")
             cursor.execute(
                 "INSERT INTO users (username, password, name, profile_pic) VALUES (?, ?, ?, ?)",
                 (username, password, name, profile_pic_path)
             )
             conn.commit()
+            print(f"Usuário {username} registrado com sucesso.")
         return jsonify({"message": "Usuário registrado com sucesso!"}), 201
-    except sqlite3.IntegrityError:
+
+    except sqlite3.IntegrityError as ie:
+        print(f"Erro de integridade no banco de dados: {ie}")
         return jsonify({"message": "Usuário já existe!"}), 409
+    except sqlite3.Error as db_error:
+        print(f"Erro no banco de dados: {db_error}")
+        return jsonify({"message": "Erro no banco de dados."}), 500
+    except Exception as e:
+        print(f"Erro interno no servidor: {e}")
+        return jsonify({"message": "Erro interno no servidor."}), 500
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -174,13 +211,26 @@ def delete_user(user_id):
 @socketio.on('message')
 def handle_message(data):
     username = session.get('username', 'Anônimo')
-    formatted_message = f"{username}: {data}"
+
+    # Obter a foto de perfil do usuário
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT profile_pic FROM users WHERE username = ?", (username,))
+        user = cursor.fetchone()
+        profile_pic = user[0] if user and user[0] else '/static/img/default-profile.png'
+
+    formatted_message = {
+        "username": username,
+        "text": data,
+        "profile_pic": profile_pic  # Enviar o caminho correto da foto de perfil
+    }
     send(formatted_message, broadcast=True)
 
 # Inicializar banco de dados e criar usuário padrão
 if __name__ == '__main__':
     print("Inicializando o banco de dados...")
     init_db()
+    update_db_structure()  # Atualizar a estrutura do banco de dados
     print("Criando usuário padrão...")
     create_default_user()
     print("Iniciando o servidor...")
