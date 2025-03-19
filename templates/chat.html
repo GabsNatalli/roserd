@@ -20,14 +20,18 @@
             height: 100vh;
             display: flex;
             flex-direction: row;
-            overflow: hidden;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
         }
         .user-list {
             background-color: rgba(0, 0, 0, 0.6);
             width: 20%;
             padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             overflow-y: auto;
-            border-right: 2px solid rgba(255, 255, 255, 0.1);
+            margin-right: 20px;
         }
         .user-list h3 {
             font-size: 18px;
@@ -56,6 +60,9 @@
             display: flex;
             flex-direction: column;
             background-color: rgba(0, 0, 0, 0.6);
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
         }
         .messages {
             flex: 1;
@@ -81,7 +88,7 @@
         .message-input {
             display: flex;
             padding: 10px;
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(0, 0, 0, 0.7);
             border-top: 2px solid rgba(255, 255, 255, 0.1);
         }
         .message-input input {
@@ -111,20 +118,21 @@
         .admin-buttons {
             margin-top: 15px;
             display: flex;
-            gap: 10px;
+            justify-content: center;
         }
         .admin-buttons button {
-            flex: 1;
-            padding: 10px;
+            padding: 8px 15px;
             border: none;
             border-radius: 5px;
-            font-size: 14px;
+            font-size: 12px;
             cursor: pointer;
-            background-color: rgba(255, 77, 77, 0.8);
+            background-color: rgba(255, 77, 77, 0.7);
             color: white;
+            transition: background-color 0.2s, box-shadow 0.2s;
         }
         .admin-buttons button:hover {
             background-color: rgba(255, 77, 77, 1);
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
         }
         .logout-btn {
             position: absolute;
@@ -138,6 +146,7 @@
             cursor: pointer;
             font-size: 14px;
             transition: background-color 0.2s, box-shadow 0.2s;
+            z-index: 10;
         }
         .logout-btn:hover {
             background-color: rgba(255, 77, 77, 1);
@@ -149,9 +158,10 @@
     <button class="logout-btn" onclick="logout()">Sair</button>
     <div class="chat-container">
         <div class="user-list">
-            <h3>Usuários</h3>
-            <ul id="users"></ul>
-            <div id="admin-buttons" class="admin-buttons"></div>
+            <h3>Usuários Online</h3>
+            <ul id="users">
+                <!-- Lista de usuários online será carregada aqui -->
+            </ul>
         </div>
         <div class="chat-box">
             <div class="messages" id="messages"></div>
@@ -187,6 +197,17 @@
             messageElement.innerHTML = `${msg} <span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
             messagesDiv.appendChild(messageElement);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+
+        // Atualizar lista de usuários online
+        socket.on('update_users', function(users) {
+            const usersList = document.getElementById('users');
+            usersList.innerHTML = '';
+            users.forEach(user => {
+                const userItem = document.createElement('li');
+                userItem.textContent = user;
+                usersList.appendChild(userItem);
+            });
         });
 
         // Enviar mensagens
