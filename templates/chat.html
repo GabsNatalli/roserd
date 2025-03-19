@@ -153,7 +153,7 @@
         const socket = io();
         const username = "{{ username }}";
         const isAdmin = "{{ is_admin | tojson }}".toLowerCase() === "true";
-        const backendUrl = window.location.origin; // Usar a URL do backend hospedado no Render
+        const backendUrl = window.location.origin; // Usar a URL base do Render
 
         // Atualizar lista de usuários online
         socket.on('update_users', function(users) {
