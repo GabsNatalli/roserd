@@ -8,7 +8,7 @@ app.secret_key = 'your_secret_key'
 socketio = SocketIO(app)
 
 # Banco de dados SQLite
-DB_PATH = "users.db"
+DB_PATH = os.path.join(os.getcwd(), "users.db")  # Garante que o banco será criado no diretório atual
 
 # Função para criar a tabela de usuários
 def init_db():
