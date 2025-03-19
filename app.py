@@ -6,7 +6,7 @@ from flask_cors import CORS  # Importar o CORS
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
-socketio = SocketIO(app)
+socketio = SocketIO(app, cors_allowed_origins="*")  # Habilitar CORS no SocketIO
 
 # Habilitar CORS para todas as rotas
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -31,14 +31,6 @@ def init_db():
         """)
         conn.commit()
         print("Tabela de usuários verificada/criada.")
-
-        # Verificar se a coluna 'name' existe, e adicioná-la se necessário
-        cursor.execute("PRAGMA table_info(users)")
-        columns = [column[1] for column in cursor.fetchall()]
-        if 'name' not in columns:
-            cursor.execute("ALTER TABLE users ADD COLUMN name TEXT")
-            conn.commit()
-            print("Coluna 'name' adicionada à tabela de usuários.")
 
 # Função para criar o usuário padrão
 def create_default_user():
@@ -135,7 +127,7 @@ def delete_user(user_id):
 def chat():
     if 'username' in session:
         return render_template('chat.html', username=session['username'], is_admin=session.get('is_admin', False))
-    return redirect(url_for('index'))
+    return redirect(url_for('serve_index'))
 
 @app.route('/logout', methods=['POST'])
 def logout():
@@ -157,4 +149,4 @@ if __name__ == '__main__':
 
     # Usar a porta fornecida pelo Render ou a porta padrão 5000
     port = int(os.getenv("PORT", 5000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)  # Permitir conexões externas
+    socketio.run(app, host='0.0.0.0', port=port)  # Usar eventlet como servidor HTTP
