@@ -4,7 +4,7 @@ import sqlite3
 import os
 from flask_cors import CORS  # Importar o CORS
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='frontend', static_url_path='/')  # Servir arquivos estáticos do frontend
 app.secret_key = 'your_secret_key'
 socketio = SocketIO(app, cors_allowed_origins="*")  # Habilitar CORS no SocketIO
 
@@ -44,25 +44,16 @@ def create_default_user():
         except sqlite3.IntegrityError:
             print("Usuário padrão já existe. Nenhuma ação necessária.")
 
-# Rota para servir arquivos estáticos (HTML)
+# Rota para servir o frontend
 @app.route('/')
 def serve_index():
-    return send_from_directory(os.getcwd(), 'index.html')
+    return send_from_directory(app.static_folder, 'index.html')
 
-@app.route('/admin')
-def serve_admin():
-    return send_from_directory(os.getcwd(), 'admin.html')
+@app.route('/<path:path>')
+def serve_static_files(path):
+    return send_from_directory(app.static_folder, path)
 
-# Configurar o Flask para servir arquivos estáticos
-@app.route('/img/<path:filename>')
-def serve_images(filename):
-    return send_from_directory(os.path.join(os.getcwd(), 'img'), filename)
-
-@app.route('/<path:filename>')
-def serve_static_files(filename):
-    return send_from_directory(os.getcwd(), filename)
-
-# Rota para login (ajustada para redirecionar todos para o chat)
+# Rota para login
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
@@ -80,7 +71,7 @@ def login():
     if user and user[0] == password:
         session['username'] = username
         session['is_admin'] = (username == "x" and password == "22")  # Define se é admin
-        return jsonify({"redirect": "/chat"}), 200
+        return jsonify({"redirect": "/chat.html"}), 200
     else:
         return jsonify({"redirect": None}), 401
 
