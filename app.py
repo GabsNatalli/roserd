@@ -4,7 +4,7 @@ import sqlite3
 import os
 from flask_cors import CORS  # Importar o CORS
 
-app = Flask(__name__, static_folder='frontend', static_url_path='/')  # Servir arquivos estáticos do frontend
+app = Flask(__name__, static_folder='.', static_url_path='/')  # Servir arquivos estáticos da raiz do projeto
 app.secret_key = 'your_secret_key'
 socketio = SocketIO(app, cors_allowed_origins="*")  # Habilitar CORS no SocketIO
 
@@ -51,7 +51,10 @@ def serve_index():
 
 @app.route('/<path:path>')
 def serve_static_files(path):
-    return send_from_directory(app.static_folder, path)
+    try:
+        return send_from_directory(app.static_folder, path)
+    except:
+        return "Arquivo não encontrado.", 404
 
 # Rota para login
 @app.route('/login', methods=['POST'])
