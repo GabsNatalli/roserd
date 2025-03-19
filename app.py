@@ -2,10 +2,14 @@ from flask import Flask, request, jsonify, send_from_directory, render_template,
 from flask_socketio import SocketIO, send
 import sqlite3
 import os
+from flask_cors import CORS  # Importar o CORS
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 socketio = SocketIO(app)
+
+# Habilitar CORS para todas as rotas
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Banco de dados SQLite
 DB_PATH = os.path.join(os.getcwd(), "users.db")  # Garante que o banco será criado no diretório atual

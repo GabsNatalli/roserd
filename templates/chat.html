@@ -20,34 +20,32 @@
             height: 100vh;
             display: flex;
             flex-direction: row;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            overflow: hidden;
         }
         .user-list {
             background-color: rgba(0, 0, 0, 0.6);
             width: 20%;
             padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
             overflow-y: auto;
-            margin-right: 20px;
+            border-right: 2px solid rgba(255, 255, 255, 0.1);
         }
         .user-list h3 {
-            font-size: 18px;
-            color: #ff9999;
-            margin-bottom: 15px;
+            font-size: 16px;
+            color: #ffcccc;
+            margin-bottom: 10px;
             text-transform: uppercase;
             font-weight: bold;
         }
         .user-list ul {
             list-style: none;
             padding: 0;
+            margin: 0;
         }
         .user-list ul li {
-            padding: 10px;
+            padding: 8px;
             border-radius: 5px;
             color: #ffffff;
+            font-size: 14px;
             cursor: pointer;
             transition: background-color 0.2s, box-shadow 0.2s;
         }
@@ -60,9 +58,6 @@
             display: flex;
             flex-direction: column;
             background-color: rgba(0, 0, 0, 0.6);
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
         }
         .messages {
             flex: 1;
@@ -88,7 +83,7 @@
         .message-input {
             display: flex;
             padding: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.6);
             border-top: 2px solid rgba(255, 255, 255, 0.1);
         }
         .message-input input {
@@ -112,25 +107,6 @@
             transition: background-color 0.2s, box-shadow 0.2s;
         }
         .message-input button:hover {
-            background-color: rgba(255, 77, 77, 1);
-            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
-        }
-        .admin-buttons {
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-        }
-        .admin-buttons button {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 5px;
-            font-size: 12px;
-            cursor: pointer;
-            background-color: rgba(255, 77, 77, 0.7);
-            color: white;
-            transition: background-color 0.2s, box-shadow 0.2s;
-        }
-        .admin-buttons button:hover {
             background-color: rgba(255, 77, 77, 1);
             box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
         }
@@ -178,27 +154,6 @@
         const username = "{{ username }}";
         const isAdmin = "{{ is_admin | tojson }}".toLowerCase() === "true";
 
-        // Exibir botões de administração apenas para o administrador
-        if (isAdmin) {
-            const adminButtonsDiv = document.getElementById('admin-buttons');
-
-            const adminButton = document.createElement('button');
-            adminButton.textContent = 'Administração';
-            adminButton.className = 'btn btn-config';
-            adminButton.onclick = () => window.location.href = '/admin';
-
-            adminButtonsDiv.appendChild(adminButton);
-        }
-
-        // Receber mensagens
-        socket.on('message', function(msg) {
-            const messagesDiv = document.getElementById('messages');
-            const messageElement = document.createElement('div');
-            messageElement.innerHTML = `${msg} <span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-
         // Atualizar lista de usuários online
         socket.on('update_users', function(users) {
             const usersList = document.getElementById('users');
@@ -208,6 +163,15 @@
                 userItem.textContent = user;
                 usersList.appendChild(userItem);
             });
+        });
+
+        // Receber mensagens
+        socket.on('message', function(msg) {
+            const messagesDiv = document.getElementById('messages');
+            const messageElement = document.createElement('div');
+            messageElement.innerHTML = `${msg} <span class="timestamp">${new Date().toLocaleTimeString()}</span>`;
+            messagesDiv.appendChild(messageElement);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
 
         // Enviar mensagens
