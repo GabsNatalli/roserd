@@ -153,6 +153,7 @@
         const socket = io();
         const username = "{{ username }}";
         const isAdmin = "{{ is_admin | tojson }}".toLowerCase() === "true";
+        const backendUrl = window.location.origin; // Usar a URL do backend hospedado no Render
 
         // Atualizar lista de usuários online
         socket.on('update_users', function(users) {
@@ -193,7 +194,7 @@
 
         // Função para deslogar
         function logout() {
-            fetch('/logout', { method: 'POST' })
+            fetch(`${backendUrl}/logout`, { method: 'POST' })
                 .then(() => window.location.href = '/');
         }
     </script>
