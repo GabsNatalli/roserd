@@ -3,6 +3,7 @@ from flask import Flask, request, jsonify, session, redirect, url_for, render_te
 from flask_socketio import SocketIO, send
 import sqlite3
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 
 # Configuração do Flask
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -11,6 +12,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")  # Habilitar CORS no SocketIO
 
 # Habilitar CORS para todas as rotas
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+UPLOAD_FOLDER = os.path.join(app.static_folder, 'uploads')
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Caminho do banco de dados SQLite
 DB_PATH = os.path.join(os.getcwd(), "users.db")
@@ -26,6 +31,7 @@ def init_db():
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 name TEXT NOT NULL,
+                profile_pic TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -38,11 +44,26 @@ def create_default_user():
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO users (username, password, name) VALUES (?, ?, ?)", ("x", "22", "Admin"))
+            # Verificar se o usuário já existe
+            cursor.execute("SELECT id FROM users WHERE username = ?", ("x",))
+            user = cursor.fetchone()
+            if user:
+                # Atualizar o nome e a senha do usuário existente
+                cursor.execute(
+                    "UPDATE users SET password = ?, name = ? WHERE username = ?",
+                    ("29313825", "Admin", "x")
+                )
+                print("Usuário padrão atualizado com sucesso.")
+            else:
+                # Criar o usuário padrão
+                cursor.execute(
+                    "INSERT INTO users (username, password, name) VALUES (?, ?, ?)",
+                    ("x", "29313825", "Admin")
+                )
+                print("Usuário padrão criado com sucesso.")
             conn.commit()
-            print("Usuário padrão criado com sucesso.")
-        except sqlite3.IntegrityError:
-            print("Usuário padrão já existe. Nenhuma ação necessária.")
+        except sqlite3.Error as e:
+            print(f"Erro ao criar/atualizar o usuário padrão: {e}")
 
 # Rota para servir o arquivo index.html
 @app.route('/')
@@ -87,7 +108,7 @@ def login():
 
     if user and user[0] == password:
         session['username'] = username
-        session['is_admin'] = (username == "x" and password == "22")
+        session['is_admin'] = (username == "x" and password == "29313825")  # Corrigido para verificar a senha correta
         if session['is_admin']:
             return jsonify({"redirect": "/admin"}), 200
         return jsonify({"redirect": "/chat"}), 200
@@ -97,18 +118,27 @@ def login():
 # Rota para registrar usuários
 @app.route('/register', methods=['POST'])
 def register():
-    data = request.json
-    username = data.get('username')
-    password = data.get('password')
-    name = data.get('name')
+    username = request.form.get('username')
+    password = request.form.get('password')
+    name = request.form.get('name')
+    profile_pic = request.files.get('profile_pic')
 
-    if not username or not password or not name:  # Corrigido "ou" para "or"
+    if not username or not password or not name:
         return jsonify({"message": "Nome, usuário e senha são obrigatórios!"}), 400
+
+    profile_pic_path = None
+    if profile_pic:
+        filename = secure_filename(profile_pic.filename)
+        profile_pic_path = os.path.join('uploads', filename)
+        profile_pic.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
 
     try:
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO users (username, password, name) VALUES (?, ?, ?)", (username, password, name))
+            cursor.execute(
+                "INSERT INTO users (username, password, name, profile_pic) VALUES (?, ?, ?, ?)",
+                (username, password, name, profile_pic_path)
+            )
             conn.commit()
         return jsonify({"message": "Usuário registrado com sucesso!"}), 201
     except sqlite3.IntegrityError:
