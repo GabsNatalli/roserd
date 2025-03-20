@@ -1,6 +1,6 @@
 import os
 from flask import Flask, request, jsonify, session, redirect, url_for, render_template, send_from_directory
-from flask_socketio import SocketIO, send
+from flask_socketio import SocketIO, send, disconnect
 import sqlite3
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -251,10 +251,22 @@ def delete_user(user_id):
     if 'username' in session and session.get('is_admin', False):
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
-            cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
-            conn.commit()
-        return jsonify({"message": "Usuário removido com sucesso!"}), 200
+            # Obter o nome de usuário antes de remover
+            cursor.execute("SELECT username FROM users WHERE id = ?", (user_id,))
+            user = cursor.fetchone()
+            if user:
+                username_to_disconnect = user[0]
+                cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+                conn.commit()
+                # Emitir evento para desconectar o usuário
+                socketio.emit('force_disconnect', {"username": username_to_disconnect})
+                return jsonify({"message": "Usuário removido com sucesso!"}), 200
     return jsonify({"message": "Acesso negado"}), 403
+
+@socketio.on('check_session')
+def check_session():
+    if 'username' not in session:
+        disconnect()
 
 @socketio.on('message')
 def handle_message(data):

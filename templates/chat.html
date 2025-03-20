@@ -357,6 +357,19 @@
         document.getElementById('image-modal').addEventListener('click', function () {
             this.classList.remove('active');
         });
+
+        // Verificar sessão periodicamente
+        setInterval(() => {
+            socket.emit('check_session');
+        }, 5000); // Verificar a cada 5 segundos
+
+        // Desconectar o usuário se ele for removido
+        socket.on('force_disconnect', function(data) {
+            if (data.username === username) {
+                alert('Você foi desconectado pelo administrador.');
+                window.location.href = '/';
+            }
+        });
     </script>
 </body>
 </html>
