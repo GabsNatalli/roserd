@@ -81,6 +81,18 @@ def create_default_user():
         except sqlite3.Error as e:
             print(f"Erro ao criar/atualizar o usuário padrão: {e}")
 
+def update_user_x():
+    print("Atualizando o nome e a foto do usuário 'x'...")
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE users
+            SET name = ?, profile_pic = ?
+            WHERE username = ?
+        """, ("Ademiro", "uploads/ademiro.png", "x"))
+        conn.commit()
+        print("Usuário 'x' atualizado com sucesso.")
+
 # Rota para servir o arquivo index.html
 @app.route('/')
 def serve_index():
@@ -150,6 +162,15 @@ def register():
             print("Erro: Nome, usuário ou senha ausentes.")
             return jsonify({"message": "Nome, usuário e senha são obrigatórios!"}), 400
 
+        # Verificar se o nome de usuário já existe
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+            existing_user = cursor.fetchone()
+            if existing_user:
+                print("Erro: Nome de usuário já está em uso.")
+                return jsonify({"message": "Nome de usuário já está em uso!"}), 409
+
         # Processar a foto de perfil, se fornecida
         profile_pic_path = None
         if profile_pic:
@@ -171,9 +192,6 @@ def register():
             print(f"Usuário {username} registrado com sucesso.")
         return jsonify({"message": "Usuário registrado com sucesso!"}), 201
 
-    except sqlite3.IntegrityError as ie:
-        print(f"Erro de integridade no banco de dados: {ie}")
-        return jsonify({"message": "Usuário já existe!"}), 409
     except sqlite3.Error as db_error:
         print(f"Erro no banco de dados: {db_error}")
         return jsonify({"message": "Erro no banco de dados."}), 500
@@ -215,24 +233,53 @@ def handle_message(data):
     # Obter a foto de perfil do usuário
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT profile_pic FROM users WHERE username = ?", (username,))
+        cursor.execute("SELECT name, profile_pic FROM users WHERE username = ?", (username,))
         user = cursor.fetchone()
-        profile_pic = user[0] if user and user[0] else '/static/img/default-profile.png'
+        name = user[0] if user else username
+        profile_pic = user[1] if user and user[1] else '/static/img/default-profile.png'
 
     formatted_message = {
-        "username": username,
+        "username": name,  # Nome de exibição
         "text": data,
-        "profile_pic": profile_pic  # Enviar o caminho correto da foto de perfil
+        "profile_pic": profile_pic  # Caminho da foto de perfil
     }
     send(formatted_message, broadcast=True)
 
-# Inicializar banco de dados e criar usuário padrão
+online_users = {}  # Dicionário para armazenar usuários online e suas fotos
+
+@socketio.on('connect')
+def handle_connect():
+    username = session.get('username', 'Anônimo')
+    if username != 'Anônimo':
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name, profile_pic FROM users WHERE username = ?", (username,))
+            user = cursor.fetchone()
+            name = user[0] if user else username  # Usar o nome de exibição
+            profile_pic = user[1] if user and user[1] else '/static/img/default-profile.png'
+        online_users[name] = profile_pic  # Usar o nome de exibição como chave
+        socketio.emit('update_users', online_users)
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    username = session.get('username', 'Anônimo')
+    if username != 'Anônimo':
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT name FROM users WHERE username = ?", (username,))
+            user = cursor.fetchone()
+            name = user[0] if user else username  # Usar o nome de exibição
+        if name in online_users:
+            del online_users[name]
+        socketio.emit('update_users', online_users)
+
 if __name__ == '__main__':
     print("Inicializando o banco de dados...")
     init_db()
     update_db_structure()  # Atualizar a estrutura do banco de dados
     print("Criando usuário padrão...")
     create_default_user()
+    update_user_x()  # Atualizar o nome e a foto do usuário 'x'
     print("Iniciando o servidor...")
 
     port = int(os.getenv("PORT", 5000))

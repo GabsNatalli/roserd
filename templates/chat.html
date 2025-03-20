@@ -29,10 +29,11 @@
         }
         .user-list {
             background-color: rgba(0, 0, 0, 0.6);
-            width: 25%; /* Ajustar largura */
+            order: 1; /* Mover a lista de usuários para o lado esquerdo */
+            width: 20%;
             padding: 15px;
             overflow-y: auto;
-            border-right: 2px solid rgba(255, 255, 255, 0.1);
+            border-right: 2px solid rgba(255, 255, 255, 0.1); /* Barra sutil */
         }
         .user-list h3 {
             font-size: 16px;
@@ -47,6 +48,9 @@
             margin: 0;
         }
         .user-list ul li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 8px;
             border-radius: 5px;
             color: #ffffff;
@@ -54,37 +58,55 @@
             cursor: pointer;
             transition: background-color 0.2s, box-shadow 0.2s;
         }
-        .user-list ul li:hover {
-            background-color: rgba(255, 77, 77, 0.7);
-            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5);
+        .user-list ul li img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%; /* Garantir que a imagem seja circular */
+            cursor: pointer; /* Mostrar que a imagem é clicável */
+            transition: transform 0.2s ease; /* Suavizar o efeito ao passar o mouse */
+        }
+        .user-list ul li img:hover {
+            transform: scale(1.1); /* Ampliar levemente ao passar o mouse */
         }
         .chat-box {
             flex: 1;
             display: flex;
             flex-direction: column;
             background-color: rgba(0, 0, 0, 0.6);
-            padding: 15px; /* Espaçamento interno */
         }
         .messages {
             flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-        }
-        .messages div {
-            margin-bottom: 10px;
             padding: 10px;
-            border-radius: 5px;
-            background-color: rgba(255, 77, 77, 0.5);
-            color: #ffffff;
-            position: relative;
-            box-shadow: 0 0 5px rgba(255, 77, 77, 0.3);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px; /* Espaçamento entre mensagens */
         }
-        .messages div .timestamp {
-            font-size: 10px;
-            color: #ffcccc;
-            position: absolute;
-            bottom: 5px;
-            right: 10px;
+        .message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 0; /* Removendo o padding */
+            border-radius: 0; /* Removendo bordas arredondadas */
+            background-color: transparent; /* Removendo o fundo */
+            color: #ffffff;
+        }
+        .message.right {
+            justify-content: flex-end;
+            flex-direction: row-reverse; /* Inverter a ordem para foto e nome ficarem na direita */
+        }
+        .message .profile-pic {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+        .message .content {
+            max-width: 70%;
+            word-wrap: break-word;
+            text-align: left;
+        }
+        .message.right .content {
+            text-align: right;
         }
         .message-input {
             display: flex;
@@ -151,21 +173,32 @@
             background-color: rgba(88, 101, 242, 1);
             box-shadow: 0 0 10px rgba(88, 101, 242, 0.5);
         }
-        .message {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: rgba(255, 77, 77, 0.5);
-            color: #ffffff;
-            box-shadow: 0 0 5px rgba(255, 77, 77, 0.3);
-        }
         .profile-pic {
             width: 40px;
             height: 40px;
             border-radius: 50%;
             margin-right: 10px;
+        }
+        .modal {
+            display: none; /* Ocultar por padrão */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8); /* Fundo embaçado */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+        .modal.active {
+            display: flex; /* Mostrar o modal */
         }
     </style>
 </head>
@@ -188,6 +221,9 @@
                 <button onclick="sendMessage()">Enviar</button>
             </div>
         </div>
+    </div>
+    <div class="modal" id="image-modal">
+        <img id="modal-image" src="" alt="Foto Ampliada">
     </div>
     <!-- Elemento de áudio para notificação -->
     <audio id="notification-sound" src="{{ url_for('static', filename='audio/notification.mp3') }}" preload="auto"></audio>
@@ -223,11 +259,14 @@
         socket.on('update_users', function(users) {
             const usersList = document.getElementById('users');
             usersList.innerHTML = '';
-            users.forEach(user => {
+            for (const [user, profilePic] of Object.entries(users)) {
                 const userItem = document.createElement('li');
-                userItem.textContent = user;
+                userItem.innerHTML = `
+                    <img src="${profilePic}" alt="Foto de Perfil" onclick="openImageModal('${profilePic}')">
+                    <span>${user}</span>
+                `;
                 usersList.appendChild(userItem);
-            });
+            }
         });
 
         // Receber mensagens
@@ -235,19 +274,18 @@
             const messagesDiv = document.getElementById('messages');
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
+            if (msg.username === username) {
+                messageElement.classList.add('right'); // Mensagens do próprio usuário no lado direito
+            }
             messageElement.innerHTML = `
                 <img src="${msg.profile_pic}" alt="Foto de Perfil" class="profile-pic">
-                <span>${msg.username}: ${msg.text}</span>
-                <span class="timestamp">${new Date().toLocaleTimeString()}</span>
+                <div class="content">
+                    <strong>${msg.username}</strong>
+                    <p>${msg.text}</p>
+                </div>
             `;
             messagesDiv.appendChild(messageElement);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            // Reproduzir som de notificação apenas se a mensagem não for do próprio usuário
-            if (msg.username !== username) {
-                const notificationSound = document.getElementById('notification-sound');
-                notificationSound.play();
-            }
         });
 
         // Enviar mensagens
@@ -272,6 +310,19 @@
             fetch(`${backendUrl}/logout`, { method: 'POST' })
                 .then(() => window.location.href = '/');
         }
+
+        // Função para abrir o modal de imagem
+        function openImageModal(imageSrc) {
+            const modal = document.getElementById('image-modal');
+            const modalImage = document.getElementById('modal-image');
+            modalImage.src = imageSrc;
+            modal.classList.add('active');
+        }
+
+        // Fechar o modal ao clicar fora da imagem
+        document.getElementById('image-modal').addEventListener('click', function () {
+            this.classList.remove('active');
+        });
     </script>
 </body>
 </html>

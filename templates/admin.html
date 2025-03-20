@@ -115,6 +115,12 @@
             border-color: rgba(255, 255, 255, 0.5); /* Contorno branco no hover */
             color: #ff5555; /* Texto vermelho no hover */
         }
+        .btn-primary:focus {
+            outline: none;
+            box-shadow: none; /* Remove o estilo azul ao clicar */
+            background-color: rgba(255, 255, 255, 0.1); /* Mantém o fundo personalizado */
+            color: #ffffff; /* Mantém o texto branco */
+        }
         .register-form {
             background-color: rgba(0, 0, 0, 0.6); /* Fundo escuro */
             padding: 20px;
@@ -133,15 +139,15 @@
             <form id="register-form" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="name" class="form-label">Nome</label>
-                    <input type="text" class="form-control" id="name" name="name" required>
+                    <input type="text" class="form-control" id="name" name="name">
                 </div>
                 <div class="mb-3">
                     <label for="username" class="form-label">Usuário</label>
-                    <input type="text" class="form-control" id="username" name="username" required>
+                    <input type="text" class="form-control" id="username" name="username">
                 </div>
                 <div class="mb-3">
                     <label for="password" class="form-label">Senha</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
+                    <input type="password" class="form-control" id="password" name="password">
                 </div>
                 <div class="mb-3">
                     <label for="profile-pic" class="form-label">Foto de Perfil (opcional)</label>
@@ -214,6 +220,17 @@
         // Enviar formulário de registro
         document.getElementById('register-form').addEventListener('submit', async (e) => {
             e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // Validação personalizada
+            if (!name || !username || !password) {
+                console.error("Todos os campos obrigatórios devem ser preenchidos.");
+                return; // Não enviar o formulário se os campos estiverem vazios
+            }
+
             const formData = new FormData(e.target);
 
             try {
@@ -223,15 +240,16 @@
                 });
 
                 const result = await response.json();
-                alert(result.message);
                 if (response.ok) {
+                    console.log(result.message); // Log de sucesso
                     e.target.reset();
                     document.getElementById('profile-preview').style.display = 'none';
                     listUsers(); // Atualizar a lista de usuários
+                } else {
+                    console.error(result.message); // Log de erro
                 }
             } catch (error) {
                 console.error("Erro ao registrar usuário:", error);
-                alert("Erro ao registrar usuário. Tente novamente.");
             }
         });
 
