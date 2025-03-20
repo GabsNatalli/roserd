@@ -370,6 +370,11 @@
                 window.location.href = '/';
             }
         });
+
+        socket.on('disconnect', () => {
+            alert('Você foi desconectado.');
+            window.location.href = '/';
+        });
     </script>
 </body>
 </html>

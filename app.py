@@ -265,8 +265,16 @@ def delete_user(user_id):
 
 @socketio.on('check_session')
 def check_session():
-    if 'username' not in session:
+    username = session.get('username', None)
+    if not username:
         disconnect()
+    else:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM users WHERE username = ?", (username,))
+            user = cursor.fetchone()
+            if not user:
+                disconnect()  # Desconectar se o usuário não estiver mais registrado
 
 @socketio.on('message')
 def handle_message(data):
@@ -302,10 +310,14 @@ def handle_connect():
     if username != 'Anônimo':
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
+            # Verificar se o usuário ainda está registrado
             cursor.execute("SELECT name, profile_pic FROM users WHERE username = ?", (username,))
             user = cursor.fetchone()
-            name = user[0] if user else username  # Usar o nome de exibição
-            profile_pic = user[1] if user and user[1] else '/static/img/default-profile.png'
+            if not user:
+                disconnect()  # Desconectar se o usuário não estiver mais registrado
+                return
+            name = user[0]
+            profile_pic = user[1] if user[1] else '/static/img/default-profile.png'
         online_users[name] = profile_pic  # Usar o nome de exibição como chave
         socketio.emit('update_users', online_users)
 
