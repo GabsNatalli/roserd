@@ -4,6 +4,8 @@ from flask_socketio import SocketIO, send
 import sqlite3
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+import threading
+import time
 
 # Configuração do Flask
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -92,6 +94,34 @@ def update_user_x():
         """, ("Ademiro", "uploads/ademiro.png", "x"))
         conn.commit()
         print("Usuário 'x' atualizado com sucesso.")
+
+# Função para criar a tabela de mensagens
+def create_messages_table():
+    print("Verificando a tabela de mensagens...")
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                text TEXT NOT NULL,
+                profile_pic TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+        print("Tabela de mensagens verificada/criada.")
+
+# Função para limpar mensagens a cada 24 horas
+def clear_old_messages():
+    while True:
+        time.sleep(86400)  # 24 horas em segundos
+        print("Limpando mensagens antigas...")
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM messages WHERE timestamp <= datetime('now', '-1 day')")
+            conn.commit()
+            print("Mensagens antigas limpas.")
 
 # Rota para servir o arquivo index.html
 @app.route('/')
@@ -238,6 +268,13 @@ def handle_message(data):
         name = user[0] if user else username
         profile_pic = user[1] if user and user[1] else '/static/img/default-profile.png'
 
+        # Salvar a mensagem no banco de dados
+        cursor.execute("""
+            INSERT INTO messages (username, text, profile_pic)
+            VALUES (?, ?, ?)
+        """, (name, data, profile_pic))
+        conn.commit()
+
     formatted_message = {
         "username": name,  # Nome de exibição
         "text": data,
@@ -260,6 +297,19 @@ def handle_connect():
         online_users[name] = profile_pic  # Usar o nome de exibição como chave
         socketio.emit('update_users', online_users)
 
+        # Enviar mensagens armazenadas para o cliente
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT username, text, profile_pic, timestamp FROM messages ORDER BY timestamp ASC")
+            messages = cursor.fetchall()
+            for msg in messages:
+                socketio.emit('message', {
+                    "username": msg[0],
+                    "text": msg[1],
+                    "profile_pic": msg[2],
+                    "timestamp": msg[3]
+                })
+
 @socketio.on('disconnect')
 def handle_disconnect():
     username = session.get('username', 'Anônimo')
@@ -277,10 +327,14 @@ if __name__ == '__main__':
     print("Inicializando o banco de dados...")
     init_db()
     update_db_structure()  # Atualizar a estrutura do banco de dados
+    create_messages_table()  # Criar a tabela de mensagens
     print("Criando usuário padrão...")
     create_default_user()
     update_user_x()  # Atualizar o nome e a foto do usuário 'x'
-    print("Iniciando o servidor...")
 
+    # Iniciar a tarefa de limpeza de mensagens
+    threading.Thread(target=clear_old_messages, daemon=True).start()
+
+    print("Iniciando o servidor...")
     port = int(os.getenv("PORT", 5000))
     socketio.run(app, host='0.0.0.0', port=port)
