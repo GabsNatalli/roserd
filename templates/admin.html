@@ -127,6 +127,43 @@
             border-radius: 15px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* Sombra */
         }
+        .clear-messages-btn {
+            background-color: rgba(255, 77, 77, 0.7); /* Fundo vermelho */
+            color: white; /* Texto branco */
+            border: none;
+            border-radius: 15px;
+            padding: 8px 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .clear-messages-btn:hover {
+            background-color: rgba(255, 77, 77, 1); /* Fundo mais intenso no hover */
+            box-shadow: 0 0 10px rgba(255, 77, 77, 0.5); /* Sombra no hover */
+        }
+        .back-to-chat-btn {
+            margin-left: 10px;
+            background-color: rgba(255, 255, 255, 0.1); /* Fundo semitransparente */
+            color: #ffffff; /* Texto branco */
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Contorno sutil */
+            border-radius: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+        .back-to-chat-btn:hover {
+            background: rgba(255, 255, 255, 0.2); /* Fundo mais visível no hover */
+            border-color: rgba(255, 255, 255, 0.5); /* Contorno branco no hover */
+            color: #ff5555; /* Texto vermelho no hover */
+        }
     </style>
 </head>
 <body>
@@ -173,7 +210,12 @@
             </table>
         </div>
         <div class="d-flex justify-content-end mt-3">
-            <button class="btn back-to-chat-btn" onclick="window.location.href='/chat'">Voltar ao Chat</button>
+            <button class="btn clear-messages-btn" onclick="clearMessages()">
+                <i class="fas fa-trash"></i> Limpar Mensagens
+            </button>
+            <button class="btn back-to-chat-btn" onclick="window.location.href='/chat'">
+                <i class="fas fa-arrow-left"></i> Voltar ao Chat
+            </button>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
@@ -259,6 +301,21 @@
 
         function logout() {
             fetch('/logout', { method: 'POST' }).then(() => window.location.href = '/');
+        }
+
+        // Função para limpar todas as mensagens
+        function clearMessages() {
+            if (confirm("Tem certeza que deseja limpar todas as mensagens do chat?")) {
+                fetch('/clear_messages', { method: 'DELETE' })
+                    .then(response => {
+                        if (response.ok) {
+                            alert("Todas as mensagens foram limpas com sucesso.");
+                        } else {
+                            alert("Erro ao limpar as mensagens.");
+                        }
+                    })
+                    .catch(error => console.error("Erro ao limpar mensagens:", error));
+            }
         }
 
         document.addEventListener('DOMContentLoaded', listUsers);

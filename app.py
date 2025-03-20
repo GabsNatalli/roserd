@@ -302,6 +302,17 @@ def update_notifications():
 
     return jsonify({"message": "Configuração de notificações atualizada com sucesso."}), 200
 
+# Rota para limpar todas as mensagens (apenas para administradores)
+@app.route('/clear_messages', methods=['DELETE'])
+def clear_messages():
+    if 'username' in session and session.get('is_admin', False):
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM messages")
+            conn.commit()
+        return jsonify({"message": "Todas as mensagens foram limpas com sucesso."}), 200
+    return jsonify({"message": "Acesso negado"}), 403
+
 @socketio.on('check_session')
 def check_session():
     username = session.get('username', None)
