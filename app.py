@@ -56,6 +56,21 @@ def update_db_structure():
         else:
             print("A coluna 'profile_pic' já existe.")
 
+# Atualizar a estrutura do banco de dados para adicionar a coluna de notificações
+def add_notifications_column():
+    print("Verificando a coluna de notificações...")
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        if 'notifications_enabled' not in columns:
+            print("Adicionando a coluna 'notifications_enabled' à tabela 'users'...")
+            cursor.execute("ALTER TABLE users ADD COLUMN notifications_enabled INTEGER DEFAULT 1")
+            conn.commit()
+            print("Coluna 'notifications_enabled' adicionada com sucesso.")
+        else:
+            print("A coluna 'notifications_enabled' já existe.")
+
 # Função para criar o usuário padrão
 def create_default_user():
     print("Verificando/criando usuário padrão...")
@@ -263,6 +278,30 @@ def delete_user(user_id):
                 return jsonify({"message": "Usuário removido com sucesso!"}), 200
     return jsonify({"message": "Acesso negado"}), 403
 
+# Rota para atualizar a configuração de notificações
+@app.route('/update_notifications', methods=['POST'])
+def update_notifications():
+    if 'username' not in session:
+        return jsonify({"message": "Usuário não autenticado"}), 401
+
+    data = request.json
+    notifications_enabled = data.get('notifications_enabled')
+
+    if notifications_enabled is None:
+        return jsonify({"message": "Parâmetro inválido"}), 400
+
+    username = session['username']
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE users
+            SET notifications_enabled = ?
+            WHERE username = ?
+        """, (1 if notifications_enabled else 0, username))
+        conn.commit()
+
+    return jsonify({"message": "Configuração de notificações atualizada com sucesso."}), 200
+
 @socketio.on('check_session')
 def check_session():
     username = session.get('username', None)
@@ -311,13 +350,14 @@ def handle_connect():
         with sqlite3.connect(DB_PATH) as conn:
             cursor = conn.cursor()
             # Verificar se o usuário ainda está registrado
-            cursor.execute("SELECT name, profile_pic FROM users WHERE username = ?", (username,))
+            cursor.execute("SELECT name, profile_pic, notifications_enabled FROM users WHERE username = ?", (username,))
             user = cursor.fetchone()
             if not user:
                 disconnect()  # Desconectar se o usuário não estiver mais registrado
                 return
             name = user[0]
             profile_pic = user[1] if user[1] else '/static/img/default-profile.png'
+            notifications_enabled = bool(user[2])
         online_users[name] = profile_pic  # Usar o nome de exibição como chave
         socketio.emit('update_users', online_users)
 
@@ -333,6 +373,9 @@ def handle_connect():
                     "profile_pic": msg[2],
                     "timestamp": msg[3]
                 })
+
+        # Enviar estado das notificações para o cliente
+        socketio.emit('notifications_status', {"enabled": notifications_enabled}, room=request.sid)
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -351,6 +394,7 @@ if __name__ == '__main__':
     print("Inicializando o banco de dados...")
     init_db()
     update_db_structure()  # Atualizar a estrutura do banco de dados
+    add_notifications_column()  # Adicionar a coluna de notificações
     create_messages_table()  # Criar a tabela de mensagens
     print("Criando usuário padrão...")
     create_default_user()
